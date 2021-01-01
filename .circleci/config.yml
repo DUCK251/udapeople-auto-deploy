@@ -67,38 +67,48 @@ jobs:
 
   test-frontend:
     docker:
-      # Docker image here
+      - image: circleci/node:13.8.0
     steps:
+      - checkout
+      - run: return 0
       # Checkout code from git
       # Restore from cache
       # Your job code here
                 
   test-backend:
     docker:
-      # Docker image here
+      - image: circleci/node:13.8.0
     steps:
+      - checkout
+      - run: return 0
       # Checkout code from git
       # Restore from cache
       # Your job code here
             
   scan-frontend:
     docker:
-      # Docker image here
+      - image: circleci/node:13.8.0
     steps:
+      - checkout
+      - run: return 0
       # Checkout code from git
       # Restore from cache
       # Your job code here
 
   scan-backend:
     docker:
+      - image: circleci/node:13.8.0
       # Docker image here
     steps:
+      - checkout
+      - run: return 0
       # Checkout code from git
       # Restore from cache
       # Your job code here
 
   deploy-infrastructure:
     docker:
+      - image: amazon/aws-cli
       # Docker image here that supports AWS CLI
     steps:
       # Checkout code from git
@@ -133,6 +143,7 @@ jobs:
 
   configure-infrastructure:
     docker:
+      - image: amazon/aws-cli
       # Docker image here that supports Ansible
     steps:
       # Checkout code from git
@@ -152,6 +163,7 @@ jobs:
 
   run-migrations:
     docker:
+      - image: circleci/node:13.8.0
       # Docker image here that supports NodeJS
     steps:
       # Checkout code from git
@@ -169,6 +181,7 @@ jobs:
 
   deploy-frontend:
     docker:
+      - image: amazon/aws-cli
       # Docker image here that supports AWS CLI
     steps:
       # Checkout code from git
@@ -190,6 +203,7 @@ jobs:
                     
   deploy-backend:
     docker:
+      - image: amazon/aws-cli
       # Docker image here that supports Ansible
     steps:
       # Checkout code from git
@@ -207,6 +221,7 @@ jobs:
 
   smoke-test:
     docker:
+      - image: circleci/node:13.8.0
       # Lightweight Docker image 
     steps:
       # Checkout code from git
@@ -231,6 +246,7 @@ jobs:
   cloudfront-update:
     docker:
       # Docker image here that supports AWS CLI
+      - image: amazon/aws-cli
     steps:
       # Checkout code from git
       - run:
@@ -245,6 +261,7 @@ jobs:
 
 cleanup:
     docker:
+      - image: amazon/aws-cli
       # Docker image here
     steps:
       # Checkout code from git
