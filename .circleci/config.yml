@@ -75,7 +75,9 @@ jobs:
       - run:
           name: Test frontend
           command: |
-            cd frontend && npm run test 
+            cd frontend && npm i \
+            cd frontend && npm run build \
+            cd frontend && npm run test
                 
   test-backend:
     docker:
