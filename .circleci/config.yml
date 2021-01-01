@@ -36,7 +36,7 @@ jobs:
   build-frontend:
     docker:
       - image: circleci/node:13.8.0
-    working_directory: ./frontend
+    working_directory: ~/udapeople-auto-deploy/frontend
     steps:
       - checkout
       - restore_cache:
@@ -44,7 +44,7 @@ jobs:
       - run:
           name: Build front-end
           command: |
-            cd frontend && npm i
+            npm i
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
