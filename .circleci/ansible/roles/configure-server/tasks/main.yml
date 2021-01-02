@@ -37,9 +37,11 @@
     repo: 'https://github.com/DUCK251/udapeople-auto-deploy.git'
     dest: /home/ubuntu/project
 
+- name: "install node modules"
+  become: yes
+  npm:
+    path: /home/ubuntu/project/backend
+
 - name: "start PM2"
   shell: |
-    cd /home/ubuntu/project/backend
-    npm install
-    npm run build
     pm2 start npm --name backend -- start
