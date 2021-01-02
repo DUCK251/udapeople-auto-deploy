@@ -47,6 +47,17 @@ commands:
             unzip awscliv2.zip
             sudo ./aws/install
 
+  add-backend-ip-in-ansible-inventory:
+    steps:
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            echo '[web]' > ~/project/.circleci/ansible/inventory.txt
+            aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text >> ~/project/.circleci/ansible/inventory.txt
+
 jobs:
   build-frontend:
     docker:
@@ -167,19 +178,6 @@ jobs:
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
-      - run:
-          name: Add back-end ip to ansible inventory
-          command: |
-            echo '[web]' > ~/project/.circleci/ansible/inventory.txt
-            aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-            --query 'Reservations[0].Instances[0].PublicIpAddress' \
-            --output text >> ~/project/.circleci/ansible/inventory.txt
-      - run: yum install -y tar gzip
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/.circleci/ansible/inventory.txt
       - destroy-environment
 
 
@@ -191,24 +189,19 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints: [7c:2c:63:18:32:1d:ae:bc:36:f9:74:8c:03:f5:e5:ed]
-      - attach_workspace:
-          at: ~/
       - run:
           name: Install dependencies
           command: |
+            pip3 install awscli
             apk add --update ansible
             ansible-galaxy install weareinteractive.environment
+      - add-backend-ip-in-ansible-inventory
       - run: cat .circleci/ansible/inventory.txt
       - run:
           name: Configure server
           command: |
             cd .circleci/ansible
             ansible-playbook -i inventory.txt configure-server.yml
-      - run:
-          name: Install AWS CLI
-          when: on_fail
-          command: |
-            pip3 install awscli
       - destroy-environment
 
   run-migrations:
@@ -277,29 +270,25 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints: [7c:2c:63:18:32:1d:ae:bc:36:f9:74:8c:03:f5:e5:ed]
-      - attach_workspace:
-          at: ~/
       - run:
           name: Install dependencies
           command: |
+            pip3 install awscli
             apk add --update ansible
             ansible-galaxy install weareinteractive.environment
-            apk add openssh-client
+            apk add openssh-
+      - add-backend-ip-in-ansible-inventory
+      - run: cat .circleci/ansible/inventory.txt
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Deploy backend
           command: |
-            cp /tmp/workspace/package.json /home/project/.circleci/ansible/roles/deploy/files/
-            cp /tmp/workspace/backend.tar.gz /home/project/.circleci/ansible/roles/deploy/files/
-            cd /home/project/.circleci/ansible
+            cp /tmp/workspace/package.json ~/project/.circleci/ansible/roles/deploy/files/
+            cp /tmp/workspace/backend.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+            cd ~/project/.circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
       # Here's where you will add some code to rollback on failure  
-      - run:
-          name: Install AWS CLI
-          when: on_fail
-          command: |
-            pip3 install awscli
       - revert-migrations
       - destroy-environment
 
@@ -336,11 +325,6 @@ jobs:
             return 1
             fi
       # Here's where you will add some code to rollback on failure  
-      - run:
-          name: Install AWS CLI
-          when: on_fail
-          command: |
-            pip3 install awscli
       - revert-migrations
       - destroy-environment
 
