@@ -24,6 +24,7 @@ commands:
       - run:
           name: Revert migrations
           # Add when this will run
+          when: on_fail
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
             SUCCESS = $(curl -H "token: 89a08dd5-7869-479d-b31a-3079c70f3656" --request GET https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7})
@@ -180,6 +181,7 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update ansible
+            ansible-galaxy install weareinteractive.environment
       - run:
           name: Configure server
           command: |
@@ -193,9 +195,9 @@ jobs:
             echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
-            ansible-playbook \
-            -i .circleci/ansible/inventory.txt \
-            .circleci/ansible/configure-server.yml
+            cd .circleci/ansible
+            cat inventory.txt
+            ansible-playbook -i inventory.txt configure-server.yml
       # Here's where you will add some code to rollback on failure
       - destroy-environment
 
@@ -219,7 +221,13 @@ jobs:
             else
             curl -H "Content-Type: text/plain" -H "token: 89a08dd5-7869-479d-b31a-3079c70f3656" --request PUT --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
             fi
-     # Here's where you will add some code to rollback on failure      
+     # Here's where you will add some code to rollback on failure
+      - run:
+          name: Install AWS CLI
+          when: on_fail
+          command: |
+            pip3 install awscli
+      - revert-migrations
       - destroy-environment
 
   deploy-frontend:
