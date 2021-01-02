@@ -27,12 +27,12 @@ commands:
           when: on_fail
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = $(curl -H "token: 89a08dd5-7869-479d-b31a-3079c70f3656" --request GET https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7})
+            SUCCESS = $(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7})
             if(( $SUCCESS==1 )); 
             then
-              cd ~/project/backend
-              npm install
-              npm run migrations:revert
+            cd ~/project/backend
+            npm install
+            npm run migrations:revert
             fi
             
 jobs:
@@ -185,20 +185,15 @@ jobs:
       - run:
           name: Configure server
           command: |
-            echo ENVIRONMENT=production > "backend/.env"
-            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
             cd .circleci/ansible
             cat inventory.txt
             ansible-playbook -i inventory.txt configure-server.yml
       # Here's where you will add some code to rollback on failure
+      - run:
+          name: Install AWS CLI
+          when: on_fail
+          command: |
+            pip3 install awscli
       - destroy-environment
 
   run-migrations:
@@ -217,9 +212,9 @@ jobs:
           command: |
             if (cd backend && grep "has been executed successfully" migration_result.txt)
             then
-            curl -H "Content-Type: text/plain" -H "token: 89a08dd5-7869-479d-b31a-3079c70f3656" --request PUT --data "1" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
+            curl -H "Content-Type: text/plain" -H "token: ${MEMSTASH_TOKEN}" --request PUT --data "1" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
             else
-            curl -H "Content-Type: text/plain" -H "token: 89a08dd5-7869-479d-b31a-3079c70f3656" --request PUT --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
+            curl -H "Content-Type: text/plain" -H "token: ${MEMSTASH_TOKEN}" --request PUT --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
             fi
      # Here's where you will add some code to rollback on failure
       - run:
@@ -236,6 +231,7 @@ jobs:
       # Docker image here that supports AWS CLI
     steps:
       # Checkout code from git
+      - checkout
       - run:
           name: Install dependencies
           command: |
