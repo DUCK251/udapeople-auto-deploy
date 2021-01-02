@@ -77,6 +77,16 @@ jobs:
           key: frontend-build
           paths: 
             - frontend/node_modules
+      - run:
+          name: Get backend url
+          command: |
+            BACKEND_IP=127.0.0.1
+            export BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
+      - run:
+          name: Backend smoke test.
+          command: |
+            echo $BACKEND_URL
+            curl "$BACKEND_URL"
 
   build-backend:
     docker:
@@ -309,7 +319,8 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
-            curl ${BACKEND_URL}
+            echo $BACKEND_URL
+            curl "$BACKEND_URL"
       - run:
           name: Frontend smoke test.
           command: |
