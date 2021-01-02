@@ -7,13 +7,13 @@
 - name: Deploy backend
   become: yes
   unarchive:
-    src: backend.tar.gz
+    src: /tmp/workspace/backend.tar.gz
     dest: /home/ubuntu/backend/
 
 - name: Copy package.json
   become: yes
   copy:
-    src: package.json
+    src: /tmp/workspace/package.json
     dest: /home/ubuntu/backend/
 
 - name: Record Env 

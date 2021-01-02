@@ -274,22 +274,18 @@ jobs:
             pip3 install awscli
             apk add --update tar gzip ansible nodejs npm curl openssh-client
             ansible-galaxy install weareinteractive.environment
-      - add-backend-ip-in-ansible-inventory
-      - run: cat .circleci/ansible/inventory.txt
       - attach_workspace:
           at: /tmp/workspace
+      - add-backend-ip-in-ansible-inventory
+      - run: cat .circleci/ansible/inventory.txt
       - run:
           name: Deploy backend
           command: |
-            echo ${PWD}
-            ls
-            cd ~/project/.circleci/ansible/roles/deploy/files
-            echo ${PWD}
-            cp /tmp/workspace/package.json .
-            cp /tmp/workspace/backend.tar.gz .
             cd ~/project/.circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
       # Here's where you will add some code to rollback on failure
+      - revert-migrations
+      - destroy-environment
 
   smoke-test:
     docker:
