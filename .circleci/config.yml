@@ -92,14 +92,12 @@ jobs:
           name: Copy compiled backend for deploy
           command: |
             mkdir /tmp/workspace
-            cp ./backend/package.json /tmp/workspace/
-            cd backend/dist
+            cd backend
             tar -zcvf /tmp/workspace/backend.tar.gz ./
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
             - backend.tar.gz
-            - package.json
       - save_cache:
           key: backend-build
           paths: 
