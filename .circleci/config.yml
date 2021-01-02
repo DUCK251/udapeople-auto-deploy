@@ -64,8 +64,6 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      - run: |
-          echo ${PWD}
       - restore_cache:
           key: frontend-build
       - run:
@@ -77,16 +75,6 @@ jobs:
           key: frontend-build
           paths: 
             - frontend/node_modules
-      - run:
-          name: Get backend url
-          command: |
-            BACKEND_IP=127.0.0.1
-            export BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
-      - run:
-          name: Backend smoke test.
-          command: |
-            echo $BACKEND_URL
-            curl "$BACKEND_URL"
 
   build-backend:
     docker:
@@ -309,18 +297,14 @@ jobs:
             pip3 install awscli
             apk add --update curl
       - run:
-          name: Get backend url
+          name: Backend smoke test.
           command: |
             BACKEND_IP=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
-            export BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
-      - run:
-          name: Backend smoke test.
-          command: |
-            echo $BACKEND_URL
-            curl "$BACKEND_URL"
+            echo $BACKEND_IP
+            curl "http://${BACKEND_IP}:3030/api/status"
       - run:
           name: Frontend smoke test.
           command: |
