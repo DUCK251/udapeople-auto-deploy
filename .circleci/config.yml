@@ -281,13 +281,15 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            cp /tmp/workspace/package.json ~/project/.circleci/ansible/roles/deploy/files/
-            cp /tmp/workspace/backend.tar.gz ~/project/.circleci/ansible/roles/deploy/files/
+            echo ${PWD}
+            ls
+            cd ~/project/.circleci/ansible/roles/deploy/files
+            echo ${PWD}
+            cp /tmp/workspace/package.json .
+            cp /tmp/workspace/backend.tar.gz .
             cd ~/project/.circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
-      # Here's where you will add some code to rollback on failure  
-      - revert-migrations
-      - destroy-environment
+      # Here's where you will add some code to rollback on failure
 
   smoke-test:
     docker:
