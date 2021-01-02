@@ -166,7 +166,7 @@ jobs:
 
   configure-infrastructure:
     docker:
-      - image: python:3.7-alpine3.11
+      - image: amazon/aws-cli
       # Docker image here that supports Ansible
     steps:
       # Checkout code from git
@@ -184,37 +184,30 @@ jobs:
       - run:
           name: Configure server
           command: |
-            echo ENVIRONMENT=production > "backend/.env"
-            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-            echo TYPEORM_HOST=${TYPEORM_HOST} >> "backend/.env"
-            echo TYPEORM_PORT=${TYPEORM_PORT} >> "backend/.env"
-            echo TYPEORM_USERNAME=${TYPEORM_USERNAME} >> "backend/.env"
-            echo TYPEORM_PASSWORD=${TYPEORM_PASSWORD} >> "backend/.env"
-            echo TYPEORM_DATABASE=${TYPEORM_DATABASE} >> "backend/.env"
             ansible-playbook \
             -i .circleci/ansible/inventory.txt \
             .circleci/ansible/configure-server.yml
-      # Here's where you will add some code to rollback on failure      
+      # Here's where you will add some code to rollback on failure
       - destroy-environment
-      
+
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
       # Docker image here that supports NodeJS
     steps:
       # Checkout code from git
+      - checkout
       - run:
           name: Run migrations
           command: |
-            # Your code here
-            exit 1
+            cd backend && npm run migrations
       - run:
           name: Send migration results to memstash
           command: |
             # Your code here
             exit 1
      # Here's where you will add some code to rollback on failure      
+      - destroy-environment
 
   deploy-frontend:
     docker:

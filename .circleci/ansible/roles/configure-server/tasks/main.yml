@@ -35,9 +35,11 @@
   become: yes
   git:
     repo: 'https://github.com/DUCK251/udapeople-auto-deploy.git'
-    dest: /home/ubuntu
+    dest: /home/ubuntu/project
 
 - name: "start PM2"
   shell: |
-    cd /home/ubuntu/backend
+    cd /home/ubuntu/project/backend
+    npm install
+    npm run build
     pm2 start npm --name backend -- start
