@@ -1,0 +1,43 @@
+---
+- name: "install python for Ansible."
+  become: true
+  apt:
+    name: ["python3"]
+    state: latest
+    update_cache: yes
+
+- name: "update apt packages."
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: "upgrade packages"
+  become: yes
+  apt:
+    upgrade: yes
+
+- name: "install dependencies."
+  become: yes
+  apt:
+    name: ["nodejs", "npm"]
+    state: latest
+    update_cache: yes
+
+- name: "install pm2"
+  become: yes
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
+
+- name: "git checkout"
+  become: yes
+  git:
+    repo: 'https://github.com/DUCK251/udapeople-auto-deploy.git'
+    dest: /home/ubuntu
+
+- name: "start PM2"
+  shell: |
+    cd /home/ubuntu/backend
+    pm2 start npm --name backend -- start

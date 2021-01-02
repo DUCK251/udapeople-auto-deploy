@@ -174,7 +174,9 @@ jobs:
       # attach workspace
       - checkout
       - add_ssh_keys:
-          fingerprints: []
+          fingerprints: [7c:2c:63:18:32:1d:ae:bc:36:f9:74:8c:03:f5:e5:ed]
+      - attach_workspace:
+          at: ~/
       - run:
           name: Install dependencies
           command: |
@@ -182,9 +184,20 @@ jobs:
       - run:
           name: Configure server
           command: |
-            ansible-playbook -i inventory.txt playbook.yml
+            echo ENVIRONMENT=production > "backend/.env"
+            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+            echo TYPEORM_HOST=${TYPEORM_HOST} >> "backend/.env"
+            echo TYPEORM_PORT=${TYPEORM_PORT} >> "backend/.env"
+            echo TYPEORM_USERNAME=${TYPEORM_USERNAME} >> "backend/.env"
+            echo TYPEORM_PASSWORD=${TYPEORM_PASSWORD} >> "backend/.env"
+            echo TYPEORM_DATABASE=${TYPEORM_DATABASE} >> "backend/.env"
+            ansible-playbook \
+            -i .circleci/ansible/inventory.txt \
+            .circleci/ansible/configure-server.yml
       # Here's where you will add some code to rollback on failure      
-
+      - destroy-environment
+      
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
