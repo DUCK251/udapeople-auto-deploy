@@ -53,6 +53,8 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - run: |
+          echo ${PWD}
       - restore_cache:
           key: frontend-build
       - run:
@@ -281,9 +283,11 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            cd backend && npm install
-            cd backend && npm run build
-            cd backend/dist
+            cd backend
+            npm install
+            npm run build 
+            cp package.json /home/project/.circleci/ansible/roles/deploy/files/
+            cd dist
             tar -zcvf /home/project/.circleci/ansible/roles/deploy/files/backend.tar.gz ./
             cd /home/project/.circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
@@ -292,40 +296,47 @@ jobs:
           name: Install AWS CLI
           when: on_fail
           command: |
-            apk add --no-cache python3 py3-pip
-            pip3 install --upgrade pip
             pip3 install awscli
-            rm -rf /var/cache/apk/*
       - revert-migrations
       - destroy-environment
 
   smoke-test:
     docker:
-      - image: circleci/node:13.8.0
+      - image: python:3.7-alpine3.11
       # Lightweight Docker image 
     steps:
-      # Checkout code from git
+      - checkout
       - run:
-          name: Install dependencies
+          name: Install AWS CLI
           command: |
-            # your code here
+            pip3 install awscli
       - run:
           name: Get backend url
           command: |
-            # your code here
+            BACKEND_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+            export BACKEND_URL="http://${BACKEND_IP}:3030/api/status"
       - run:
           name: Backend smoke test.
           command: |
-            # your code here
+            curl ${BACKEND_URL}
       - run:
           name: Frontend smoke test.
           command: |
-            # your code here
+            FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
+            if curl -s ${FRONTEND_URL} | grep "Welcome"
+            then
+            return 1
+            else
+            return 1
+            fi
+
       # Here's where you will add some code to rollback on failure  
 
   cloudfront-update:
     docker:
-      # Docker image here that supports AWS CLI
       - image: amazon/aws-cli
     steps:
       # Checkout code from git

@@ -31,7 +31,10 @@
 - name: Start backend with pm2
   become: yes
   shell: |
+    export ENVIRONMENT=production
+    export TYPEORM_CONNECTION=postgres
     export TYPEORM_HOST="{{ lookup('env', 'TYPEORM_HOST') }}"
+    export TYPEORM_PORT="{{ lookup('env', 'TYPEORM_PORT') }}"
     export TYPEORM_ENTITIES="{{ lookup('env', 'TYPEORM_ENTITIES') }}"
     export TYPEORM_USERNAME="{{ lookup('env', 'TYPEORM_USERNAME') }}"
     export TYPEORM_PASSWORD="{{ lookup('env', 'TYPEORM_PASSWORD') }}"
