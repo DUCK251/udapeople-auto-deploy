@@ -38,10 +38,10 @@ commands:
             fi
   
   install-awscli:
-    description: Install AWS CLI
     steps:
-      - run:
+      - run: 
           name: Install AWS CLI
+          when: on_fail
           command: |
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip
@@ -79,6 +79,18 @@ jobs:
           command: |
               cd backend && npm i \
               cd backend && npm run build
+      - run:
+          name: Copy compiled backend for deploy
+          command: |
+            mkdir /tmp/workspace
+            cp ./backend/package.json /tmp/workspace/
+            cd backend/dist
+            tar -zcvf /tmp/workspace/backend.tar.gz ./
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - backend.tar.gz
+            - package.json
       - save_cache:
           key: backend-build
           paths: 
@@ -222,12 +234,7 @@ jobs:
             curl -H "Content-Type: text/plain" -H "token: ${MEMSTASH_TOKEN}" --request PUT --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
             fi
      # Here's where you will add some code to rollback on failure
-      - run:
-          name: Install AWS CLI
-          when: on_fail
-          command: |
-            apt-get install -y python3 pip3
-            pip3 install awscli
+      - install-awscli
       - revert-migrations
       - destroy-environment
 
@@ -251,7 +258,7 @@ jobs:
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
             export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
+            echo "API_URL=$API_URL" >> frontend/.env
       - run:
           name: Deploy frontend objects
           command: |
@@ -278,15 +285,13 @@ jobs:
             apk add --update ansible
             ansible-galaxy install weareinteractive.environment
             apk add openssh-client
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: Deploy backend
           command: |
-            cd backend
-            npm install
-            npm run build 
-            cp package.json /home/project/.circleci/ansible/roles/deploy/files/
-            cd dist
-            tar -zcvf /home/project/.circleci/ansible/roles/deploy/files/backend.tar.gz ./
+            cp /tmp/workspace/package.json /home/project/.circleci/ansible/roles/deploy/files/
+            cp /tmp/workspace/backend.tar.gz /home/project/.circleci/ansible/roles/deploy/files/
             cd /home/project/.circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
       # Here's where you will add some code to rollback on failure  
@@ -330,14 +335,21 @@ jobs:
             else
             return 1
             fi
-
       # Here's where you will add some code to rollback on failure  
+      - run:
+          name: Install AWS CLI
+          when: on_fail
+          command: |
+            pip3 install awscli
+      - revert-migrations
+      - destroy-environment
 
   cloudfront-update:
     docker:
       - image: amazon/aws-cli
     steps:
       # Checkout code from git
+      - checkout
       - run:
           name: Install dependencies
           command: |
@@ -345,8 +357,20 @@ jobs:
       - run:
           name: Update cloudfront distribution
           command: |
-            # your code here
+            export OldWorkflowID=$(aws cloudformation \
+            list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+            --no-paginate --output text)
+            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+            --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+            echo Old Workflow Id: "${OldWorkflowID}"
+            aws cloudformation deploy \
+            --template-file .circleci/files/cloudfront.yml \
+            --stack-name udapeople-cloudfront \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
+            --tags project=udapeople
       # Here's where you will add some code to rollback on failure  
+      - revert-migrations
+      - destroy-environment
 
   cleanup:
       docker:
