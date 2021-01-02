@@ -1,0 +1,45 @@
+- name: Make backend directory
+  become: yes
+  file:
+    path: /home/ubuntu/backend
+    state: directory
+
+- name: Deploy backend
+  become: yes
+  unarchive:
+    src: backend.tar.gz
+    dest: /home/ubuntu/backend/
+
+- name: Copy package.json
+  become: yes
+  copy:
+    src: package.json
+    dest: /home/ubuntu/backend/
+
+- name: Record Env 
+  become: yes
+  shell: |
+    echo {{ lookup('env', 'TYPEORM_HOST') }} > env_result.txt
+    echo {{ lookup('env', 'TYPEORM_ENTITIES') }} >> env_result.txt
+    echo {{ lookup('env', 'TYPEORM_USERNAME') }} >> env_result.txt
+
+- name: Install NPM dependencies
+  shell:
+    cmd: npm install --production
+    chdir: /home/ubuntu/backend
+
+- name: Start backend with pm2
+  become: yes
+  shell: |
+    export TYPEORM_HOST="{{ lookup('env', 'TYPEORM_HOST') }}"
+    export TYPEORM_ENTITIES="{{ lookup('env', 'TYPEORM_ENTITIES') }}"
+    export TYPEORM_USERNAME="{{ lookup('env', 'TYPEORM_USERNAME') }}"
+    export TYPEORM_PASSWORD="{{ lookup('env', 'TYPEORM_PASSWORD') }}"
+    export TYPEORM_DATABASE="{{ lookup('env', 'TYPEORM_DATABASE') }}"
+    cd /home/ubuntu/backend
+    pm2 start main.js --name backend
+
+- name: "Set pm2 start as service"
+  become: yes
+  shell: |
+    env PATH=$PATH:/usr/local/bin pm2 startup -u ubuntu

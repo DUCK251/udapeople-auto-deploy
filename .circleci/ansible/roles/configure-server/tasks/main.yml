@@ -30,34 +30,3 @@
     global: yes
     production: yes
     state: present
-
-- name: "git checkout"
-  become: yes
-  git:
-    repo: 'https://github.com/DUCK251/udapeople-auto-deploy.git'
-    dest: /home/ubuntu/project
-
-- name: "install node modules"
-  become: yes
-  npm:
-    path: /home/ubuntu/project/backend
-
-- name: "Check TYPEORM_ENTITIES env variable"
-  debug:
-    msg: "{{ lookup('env', 'TYPEORM_ENTITIES') }}"
-
-- name: "start PM2"
-  become: yes
-  shell: |
-    export ENVIRONMENT=production
-    export TYPEORM_CONNECTION=postgres
-    export TYPEORM_MIGRATIONS_DIR=./src/migrations
-    export TYPEORM_MIGRATIONS=./src/migrations/*.ts
-    export TYPEORM_HOST="{{ lookup('env', 'TYPEORM_HOST') }}"
-    export TYPEORM_PORT="{{ lookup('env', 'TYPEORM_PORT') }}"
-    export TYPEORM_ENTITIES="{{ lookup('env', 'TYPEORM_ENTITIES') }}"
-    export TYPEORM_USERNAME="{{ lookup('env', 'TYPEORM_USERNAME') }}"
-    export TYPEORM_PASSWORD="{{ lookup('env', 'TYPEORM_PASSWORD') }}"
-    export TYPEORM_DATABASE="{{ lookup('env', 'TYPEORM_DATABASE') }}"
-    echo ${ENVIRONMENT} > ansible_result
-    cd /home/ubuntu/project/backend && pm2 start npm --name backend -- start
