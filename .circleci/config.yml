@@ -210,13 +210,13 @@ jobs:
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
-      # Docker image here that supports NodeJS
     steps:
-      # Checkout code from git
       - checkout
-      - run: cd backend && npm i
+      - run: cd backend && npm install
+      - run: cd backend && npm run build
       - run:
           name: Run migrations
+          no_output_timeout: 10m
           command: |
             cd backend && npm run migrations > migration_result.txt
       - run: cat migration_result.txt
@@ -278,21 +278,35 @@ jobs:
                     
   deploy-backend:
     docker:
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.11
       # Docker image here that supports Ansible
     steps:
-      # Checkout code from git
-      # Add ssh keys with fingerprint
-      # attach workspace
+      - checkout
+      - add_ssh_keys:
+          fingerprints: [7c:2c:63:18:32:1d:ae:bc:36:f9:74:8c:03:f5:e5:ed]
+      - attach_workspace:
+          at: ~/
       - run:
           name: Install dependencies
           command: |
-            # your code here
+            apk add --update ansible
+            ansible-galaxy install weareinteractive.environment
+            apk add openssh-client
       - run:
           name: Deploy backend
           command: |
             # your code here
       # Here's where you will add some code to rollback on failure  
+      - run:
+          name: Install AWS CLI
+          when: on_fail
+          command: |
+            apk add --no-cache python3 py3-pip
+            pip3 install --upgrade pip
+            pip3 install awscli
+            rm -rf /var/cache/apk/*
+      - revert-migrations
+      - destroy-environment
 
   smoke-test:
     docker:
