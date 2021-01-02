@@ -288,7 +288,6 @@ jobs:
   smoke-test:
     docker:
       - image: python:3.7-alpine3.11
-      # Lightweight Docker image 
     steps:
       - checkout
       - run:
@@ -316,19 +315,19 @@ jobs:
             return 1
             fi
       # Here's where you will add some code to rollback on failure  
-      - revert-migrations
-      - destroy-environment
+      # - revert-migrations
+      # - destroy-environment
 
   cloudfront-update:
     docker:
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.11
     steps:
-      # Checkout code from git
       - checkout
       - run:
           name: Install dependencies
           command: |
-            # your code here
+            pip3 install awscli
+            apk add --update curl
       - run:
           name: Update cloudfront distribution
           command: |
@@ -342,16 +341,14 @@ jobs:
             --stack-name udapeople-cloudfront \
             --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
             --tags project=udapeople
-      # Here's where you will add some code to rollback on failure  
       - revert-migrations
       - destroy-environment
 
   cleanup:
       docker:
         - image: amazon/aws-cli
-        # Docker image here
       steps:
-        # Checkout code from git
+        - checkout
         - run:
             name: Get old stack workflow id
             command: |
