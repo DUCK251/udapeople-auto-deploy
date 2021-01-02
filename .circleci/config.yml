@@ -166,7 +166,7 @@ jobs:
 
   configure-infrastructure:
     docker:
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.11
       # Docker image here that supports Ansible
     steps:
       # Checkout code from git
@@ -175,7 +175,6 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints: [7c:2c:63:18:32:1d:ae:bc:36:f9:74:8c:03:f5:e5:ed]
-      - run: yum install -y tar gzip
       - attach_workspace:
           at: ~/
       - run:
