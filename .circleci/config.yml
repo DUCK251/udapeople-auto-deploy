@@ -182,11 +182,11 @@ jobs:
           command: |
             apk add --update ansible
             ansible-galaxy install weareinteractive.environment
+      - run: cat inventory.txt
       - run:
           name: Configure server
           command: |
             cd .circleci/ansible
-            cat inventory.txt
             ansible-playbook -i inventory.txt configure-server.yml
       # Here's where you will add some code to rollback on failure
       - run:
@@ -203,14 +203,16 @@ jobs:
     steps:
       # Checkout code from git
       - checkout
+      - run: cd backend && npm i
       - run:
           name: Run migrations
           command: |
-            cd backend && npm run migrations | tee migration_result.txt
+            cd backend && npm run migrations > migration_result.txt
+      - run: cat migration_result.txt
       - run:
           name: Send migration results to memstash
           command: |
-            if (cd backend && grep "has been executed successfully" migration_result.txt)
+            if grep "has been executed successfully" migration_result.txt
             then
             curl -H "Content-Type: text/plain" -H "token: ${MEMSTASH_TOKEN}" --request PUT --data "1" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7}
             else
@@ -221,7 +223,10 @@ jobs:
           name: Install AWS CLI
           when: on_fail
           command: |
+            apk add --no-cache python3 py3-pip
+            pip3 install --upgrade pip
             pip3 install awscli
+            rm -rf /var/cache/apk/*
       - revert-migrations
       - destroy-environment
 
