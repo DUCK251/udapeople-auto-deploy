@@ -246,12 +246,16 @@ jobs:
             --output text)
 
             export API_URL="http://${BACKEND_IP}:3030"
+
+            echo $API_URL
+            
             echo "API_URL=$API_URL" >> frontend/.env
       - run:
           name: Deploy frontend objects
           command: |
             cd frontend
             npm install
+            npm audit fix --audit-level=critical --force
             npm run build
             cd dist
             aws s3 sync . "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --delete
