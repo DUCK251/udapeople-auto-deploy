@@ -339,7 +339,7 @@ jobs:
           command: |
             aws cloudformation deploy \
             --template-file .circleci/files/cloudfront.yml \
-            --stack-name udapeople-cloudfront \
+            --stack-name production-distro \
             --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
             --tags project=udapeople
       - revert-migrations
@@ -359,7 +359,7 @@ jobs:
               export OldWorkflowID=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/old-workflow-id)
 
               echo Old Workflow Id: "${OldWorkflowID}"
-              
+
               if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
               then
               aws s3 rm s3://udapeople-${OldWorkflowID} --recursive
